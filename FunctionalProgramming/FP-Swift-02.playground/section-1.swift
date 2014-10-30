@@ -1,7 +1,10 @@
 // Playground - noun: a place where people can play
 
+import XCPlayground
+import AppKit
 import Foundation
-import CoreImage
+
+XCPSetExecutionShouldContinueIndefinitely()
 
 typealias Filter = CIImage -> CIImage
 
@@ -21,7 +24,6 @@ extension CIFilter {
     }
 }
 
-
 func blur(radius: Double) -> Filter {
     return { image in
         let parameters: Parameters = [
@@ -34,3 +36,40 @@ func blur(radius: Double) -> Filter {
         return filter.outputImage
     }
 }
+
+func colorGenerator(color: NSColor) -> Filter {
+    return { _ in
+        let parameters: Parameters = [kCIInputColorKey: color]
+        let filter = CIFilter(name: "CIConstantColorGenerator", parameters: parameters)
+        return filter.outputImage
+    }
+}
+
+func compositeSourceOver(overlay: CIImage) -> Filter {
+    return { image in
+        let parameters: Parameters = [
+            kCIInputBackgroundImageKey: image,
+            kCIInputImageKey: overlay
+        ]
+        let filter = CIFilter(name: "CISourceOverCompositing", parameters: parameters)
+        let cropRect = image.extent()
+
+        return filter.outputImage.imageByCroppingToRect(cropRect)
+    }
+}
+
+func colorOverlay(color: NSColor) -> Filter {
+    return { image in
+        let overlay = colorGenerator(color)(image)
+        return compositeSourceOver(overlay)(image)
+    }
+}
+
+let url = NSURL(string: "http://tinyurl.com/m74s1db")
+let image:CIImage = CIImage(contentsOfURL: url)
+
+let blurRadius = 5.0
+let overlayColor = NSColor.redColor().colorWithAlphaComponent(0.2)
+let blurredImage = blur(blurRadius)(image)
+let overlaidmage = colorOverlay(overlayColor)(blurredImage)
+
