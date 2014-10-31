@@ -65,11 +65,25 @@ func colorOverlay(color: NSColor) -> Filter {
     }
 }
 
-let url = NSURL(string: "http://tinyurl.com/m74s1db")
+let bundle = NSBundle.mainBundle()
+let path:String = bundle.resourcePath!
+
+let url = NSURL(string: "http://tinyurl.com/m74sldb")
 let image:CIImage = CIImage(contentsOfURL: url)
+
 
 let blurRadius = 5.0
 let overlayColor = NSColor.redColor().colorWithAlphaComponent(0.2)
 let blurredImage = blur(blurRadius)(image)
 let overlaidmage = colorOverlay(overlayColor)(blurredImage)
+
+
+infix operator >>> { associativity left }
+
+func >>> (filter1: Filter, filter2: Filter) -> Filter {
+    return {img in filter2(filter1(img)) }
+}
+
+let myFilter2 = blur(blurRadius) >>> colorOverlay(overlayColor)
+let result = myFilter2(image)
 
