@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
+   <FileRef
+      location = "group:commander.swift">
+   </FileRef>
+   <FileRef
+      location = "group:fetchstates.swift">
+   </FileRef>
    <Group
       location = "container:"
       name = "FunctionalProgramming">
@@ -15,6 +21,9 @@
       </FileRef>
       <FileRef
          location = "group:FunctionalProgramming/FP-Swift-04.playground">
+      </FileRef>
+      <FileRef
+         location = "group:FunctionalProgramming/FP-Swift-05.playground">
       </FileRef>
    </Group>
    <FileRef
