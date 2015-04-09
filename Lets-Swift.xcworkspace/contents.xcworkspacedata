@@ -25,6 +25,12 @@
       <FileRef
          location = "group:FunctionalProgramming/FP-Swift-05.playground">
       </FileRef>
+      <FileRef
+         location = "group:FunctionalProgramming/FP-Swift-06.playground">
+      </FileRef>
+      <FileRef
+         location = "group:FunctionalProgramming/FP-Swift-07.playground">
+      </FileRef>
    </Group>
    <FileRef
       location = "group:generate_plist.swift">
