@@ -1,99 +1,161 @@
-//: # Purely Functional Data Structures
+//: # Enumerations
 
-import UIKit
+import Foundation
 
 
-/*: 
-## Using Arrays to represent sets
+enum Encoding {
+    case ASCII
+    case NEXTSTEP
+    case JapaneseEUC
+    case UTF8
+    case UTF16
+}
 
-This is not the best way to go about it.
-
-    func emptySet<T>() -> Array<T> {
-        return []
-    }
-
-    func isEmptySet<T>(set: [T]) -> Bool {
-        return set.isEmpty
-    }
-
-    func setContains<T: Equatable>(x: T, set: [T]) -> Bool {
-        return contains(set, x)
-    }
-
-    func setInsert<T: Equatable>(x: T, set: [T]) -> Bool {
-        return setContains(x, set) ? set : [x] + set
-    }
+/*
+// Won't work because Swift enums are distinct from Int (and other types)
+let myEncoding = Encoding.ASCII + Encoding.UTF8
 */
 
+func toNSStringEncoding(encoding: Encoding) -> NSStringEncoding
+{
+    switch encoding {
+    case Encoding.ASCII:
+        return NSASCIIStringEncoding
+    case Encoding.NEXTSTEP:
+        return NSNEXTSTEPStringEncoding
+    case Encoding.JapaneseEUC:
+        return NSJapaneseEUCStringEncoding
+    case Encoding.UTF8:
+        return NSUTF8StringEncoding
+    case Encoding.UTF16:
+        return NSUTF16StringEncoding
+    }
+}
 
-//: ## Binary search tree
+
+toNSStringEncoding(Encoding.UTF8)
+
+func createEncoding(enc: NSStringEncoding) -> Encoding? {
+    switch enc {
+    case NSASCIIStringEncoding:
+        return Encoding.ASCII
+    case NSNEXTSTEPStringEncoding:
+        return Encoding.NEXTSTEP
+    case NSJapaneseEUCStringEncoding:
+        return Encoding.JapaneseEUC
+    case NSUTF8StringEncoding:
+        return Encoding.UTF8
+    case NSUTF16StringEncoding:
+        return Encoding.UTF16
+    default:
+        return nil
+    }
+}
+
+func localizedEncodingName(encoding: Encoding) -> String {
+    return String.localizedNameOfStringEncoding(
+                             toNSStringEncoding(encoding))
+}
+
+localizedEncodingName(Encoding.ASCII)
+
+
+// Should work but doesn't ?!?
+func readFile1(path: String, encoding: Encoding) -> String? {
+    var possibleError: NSError? = nil
+    let possibleString = NSString(contentsOfFile: path,
+                            encoding: toNSStringEncoding(encoding),
+                            error: &possibleError)
+    return possibleString as String?
+}
+
+
+
+enum ReadFileResult {
+    case Success(String)
+    case Failure(NSError)
+}
+
+
+let exampleSuccess: ReadFileResult = ReadFileResult.Success("File contents go here!")
+
+func readFile(path: String, encoding: Encoding) -> ReadFileResult {
+    var possibleError: NSError? = nil
+    let stringEncoding = toNSStringEncoding(encoding)
+    let possibleString: String? = NSString(contentsOfFile: path,
+                                            encoding: stringEncoding,
+                                            error: &possibleError) as String?
+
+    if let string = possibleString {
+        return ReadFileResult.Success(string)
+    } else if let error = possibleError {
+        return ReadFileResult.Failure(error)
+    } else {
+        assert(false, "The impossible error occurred")
+    }
+}
+
+
+switch readFile("/Users/dcloud/code/objc/Lets-Swift/fetchstates.swift", Encoding.UTF8) {
+    case let ReadFileResult.Success(contents):
+        println("File successfully opened...")
+    case let ReadFileResult.Failure(error):
+        println("Failed to open file. Error code: \(error.code)")
+}
 
 class Box<T> {
     let unbox: T
     init(_ value: T) { self.unbox = value }
 }
 
-enum Tree<T> {
-    case Leaf
-    case Node(Box<Tree<T>>, Box<T>, Box<Tree<T>>)
+enum Result<T> {
+    case Success(Box<T>)
+    case Failure(NSError)
 }
 
-let leaf: Tree<Int> = Tree.Leaf
+func readFileImproved(path: String, encoding: Encoding) -> Result<String> {
+    var possibleError: NSError? = nil
+    let stringEncoding = toNSStringEncoding(encoding)
+    let possibleString: String? = NSString(contentsOfFile: path,
+        encoding: stringEncoding,
+        error: &possibleError) as String?
 
-let five: Tree<Int> = Tree.Node(Box(leaf), Box(5), Box(leaf))
-
-func single<T>(x: T) -> Tree<T> {
-    return Tree.Node(Box(Tree.Leaf), Box(x), Box(Tree.Leaf))
-}
-
-func count<T>(tree: Tree<T>) -> Int {
-    switch tree {
-    case let Tree.Leaf:
-        return 0
-    case let Tree.Node(left, x, right):
-        return 1 + count(left.unbox) + count(right.unbox)
+    if let string = possibleString {
+        return Result.Success(Box(string))
+    } else if let error = possibleError {
+        return Result.Failure(error)
+    } else {
+        assert(false, "The impossible error occurred")
     }
 }
 
-func elements<T>(tree: Tree<T>) -> [T] {
-    switch tree {
-    case let Tree.Leaf:
-        return []
-    case let Tree.Node(left, x, right):
-        return elements(left.unbox) + [x.unbox] + elements(right.unbox)
-    }
+switch readFileImproved("Hello.md", Encoding.UTF8) {
+    case let Result.Success(box):
+        println("File Sucessfully opened...")
+    case let Result.Failure(error):
+        println("Failed to open file. Error code: \(error.code)")
 }
 
-func emptySet<T>() -> Tree<T> {
-    return Tree.Leaf
-}
 
-func isEmptySet<T>(tree: Tree<T>) -> Bool {
-    switch tree {
-    case let Tree.Leaf:
-        return true
-    case let Tree.Node(_, _, _):
-        return false
-    }
-}
-/*:
+/*: 
 
-We could define a checker as follows, provided we also created the all function:
+## The algrebra of data types
 
-    func isBST<T: Comparable>(tree: Tree<T>) -> Bool {
-        switch tree {
-        case let Tree.Leaf:
-            return true
-        case let Tree.Node(left, x, right):
-            let leftElements = elements(left.unbox)
-            let rightElements = elements(right.unbox)
-            return all(leftElements) { y in y < x.unbox }
-                && all(rightElements) { y in y > x.unbox }
-                && isBST(left.unbox)
-                && isBST(right.unbox)
-        }
-    }
+Wat?
 
 */
 
-//: Making autocomplete using BST
+enum Add<T, U> {
+    case InLeft(Box<T>)
+    case InRight(Box<U>)
+}
+
+enum Zero {}
+
+struct Times<T, U> {
+    let fst:T
+    let snd:U
+}
+
+typealias One = ()
+

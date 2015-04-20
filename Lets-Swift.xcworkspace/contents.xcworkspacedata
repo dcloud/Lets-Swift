@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:AutomateWithSwift.md">
+   </FileRef>
+   <FileRef
       location = "group:commander.swift">
    </FileRef>
    <FileRef
@@ -10,9 +13,6 @@
    <Group
       location = "container:"
       name = "FunctionalProgramming">
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-01.playground">
-      </FileRef>
       <FileRef
          location = "group:FunctionalProgramming/FP-Swift-02.playground">
       </FileRef>
@@ -33,6 +33,12 @@
       </FileRef>
       <FileRef
          location = "group:FunctionalProgramming/FP-Swift-08.playground">
+      </FileRef>
+      <FileRef
+         location = "group:FunctionalProgramming/FP-Swift-09.playground">
+      </FileRef>
+      <FileRef
+         location = "group:FunctionalProgramming/FP-Swift-10.playground">
       </FileRef>
    </Group>
    <FileRef

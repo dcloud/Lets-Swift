@@ -1,89 +1,88 @@
 // Playground - noun: a place where people can play
 
-import XCPlayground
-import AppKit
+import UIKit
 import Foundation
 
-XCPSetExecutionShouldContinueIndefinitely()
+typealias Position = CGPoint
+typealias Distance = CGFloat
 
-typealias Filter = CIImage -> CIImage
+// Showing a task getting more complicated
 
-typealias Parameters = Dictionary<String, AnyObject>
-
-extension CIFilter {
-    convenience init(name: String, parameters: Parameters) {
-        self.init(name: name)
-        setDefaults()
-        for (key, value: AnyObject) in parameters {
-            setValue(value, forKey: key)
-        }
-    }
-
-    var outputImage: CIImage {
-        return self.valueForKey(kCIOutputImageKey) as CIImage
-    }
+func inRange1(target: Position, range: Distance) -> Bool {
+    return sqrt(target.x * target.x + target.y * target.y) <= range
 }
 
-func blur(radius: Double) -> Filter {
-    return { image in
-        let parameters: Parameters = [
-            kCIInputRadiusKey: radius,
-            kCIInputImageKey: image
-        ]
-        let filter = CIFilter(name: "CIGaussianBlur",
-            parameters: parameters)
+func inRange2(target: Position, ownPosition: Position,
+    range: Distance) -> Bool {
+    let dx = ownPosition.x - target.x
+    let dy = ownPosition.y - target.y
 
-        return filter.outputImage
-    }
+    let targetDistance = sqrt(dx*dx + dy*dy)
+    return targetDistance <= range
 }
 
-func colorGenerator(color: NSColor) -> Filter {
-    return { _ in
-        let parameters: Parameters = [kCIInputColorKey: color]
-        let filter = CIFilter(name: "CIConstantColorGenerator", parameters: parameters)
-        return filter.outputImage
-    }
+let minimumDistance: Distance = 2.0
+
+func inRange3(target: Position, ownPosition: Position, range: Distance) -> Bool {
+    let dx = ownPosition.x - target.x
+    let dy = ownPosition.y - target.y
+
+    let targetDistance = sqrt(dx*dx + dy*dy)
+    return targetDistance <= range && targetDistance >= minimumDistance
+
 }
 
-func compositeSourceOver(overlay: CIImage) -> Filter {
-    return { image in
-        let parameters: Parameters = [
-            kCIInputBackgroundImageKey: image,
-            kCIInputImageKey: overlay
-        ]
-        let filter = CIFilter(name: "CISourceOverCompositing", parameters: parameters)
-        let cropRect = image.extent()
+func inRange4(target: Position, ownPosition: Position, friendly: Position, range: Distance) -> Bool {
+    let dx = ownPosition.x - target.x
+    let dy = ownPosition.y - target.y
+    let targetDistance = sqrt(dx*dx + dy*dy)
 
-        return filter.outputImage.imageByCroppingToRect(cropRect)
-    }
+    let friendlyDx = friendly.x - target.x
+    let friendlyDy = friendly.y - target.y
+    let friendlyDistance = sqrt(friendlyDx * friendlyDx + friendlyDy * friendlyDy)
+
+    return targetDistance <= range
+    && targetDistance >= minimumDistance
+    && friendlyDistance >= targetDistance
 }
 
-func colorOverlay(color: NSColor) -> Filter {
-    return { image in
-        let overlay = colorGenerator(color)(image)
-        return compositeSourceOver(overlay)(image)
+// ---------------------------------
+
+typealias Region = Position -> Bool
+
+func circle(radius: Distance) -> Region {
+    return { p in sqrt(p.x * p.x + p.y * p.y) <= radius }
+}
+
+func shift(offset: Position, region: Region) -> Region {
+    return { point in
+        let shiftedPoint = Position(x: point.x + offset.x,
+                                    y: point.y + offset.y)
+        return region(shiftedPoint)
     }
 }
 
-let bundle = NSBundle.mainBundle()
-let path:String = bundle.resourcePath!
-
-let url = NSURL(string: "http://tinyurl.com/m74sldb")
-let image:CIImage = CIImage(contentsOfURL: url)
-
-
-let blurRadius = 5.0
-let overlayColor = NSColor.redColor().colorWithAlphaComponent(0.2)
-let blurredImage = blur(blurRadius)(image)
-let overlaidmage = colorOverlay(overlayColor)(blurredImage)
-
-
-infix operator >>> { associativity left }
-
-func >>> (filter1: Filter, filter2: Filter) -> Filter {
-    return {img in filter2(filter1(img)) }
+func invert(region: Region) -> Region {
+    return { point in !region(point) }
 }
 
-let myFilter2 = blur(blurRadius) >>> colorOverlay(overlayColor)
-let result = myFilter2(image)
+func intersection(region1: Region, region2: Region) -> Region {
+    return { point in region1(point) && region2(point) }
+}
 
+func union(region1: Region, region2: Region) -> Region {
+    return { point in region1(point) || region2(point) }
+}
+
+func difference(region: Region, minusRegion: Region) -> Region {
+    return intersection(region, invert(minusRegion))
+}
+
+
+func inRange(ownPosition: Position, target: Position, friendly: Position, range: Distance) -> Bool {
+    let rangeRegion = difference(circle(range), circle(minimumDistance))
+    let targetRegion = shift(ownPosition, rangeRegion)
+    let friendlyRegion = shift(friendly, circle(minimumDistance))
+    let resultRegion = difference(targetRegion, friendlyRegion)
+    return resultRegion(target)
+}

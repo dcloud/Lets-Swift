@@ -1,69 +1,156 @@
-// FP-Swift 03 - Optionals
+// Playground - noun: a place where people can play
 
 import Foundation
 
-
-let cities = ["Paris": 2243, "Madrid": 3216, "Amsterdam": 881, "Berlin": 3397]
-
-cities["foo"] ?? 0
-
-(cities["Paris"] ?? 0) * 1000
-
-func incrementOptional(optional: Int?) -> Int? {
-    return optional.map { x in x + 1 }
+func computeIntArray(xs: [Int], f: Int -> Int) -> [Int] {
+    var result: [Int] = []
+    for x in xs {
+        result.append(f(x))
+    }
+    return result
 }
 
-let x: Int? = 3
-let y: Int? = nil
-//let z: Int? = x + y
+func doubleIntArray(xs: [Int]) -> [Int] {
+    return computeIntArray(xs) { x in x * 2 }
+}
 
-func addOptionals(optionalX: Int?, optionalY: Int?) -> Int? {
-    if let x  = optionalX {
-        if let y = optionalY {
-            return x + y
+// If we were to define map ourselves
+
+func map<T, U>(xs: [T], f: T -> U) -> [U] {
+    var result: [U] = []
+    for x in xs {
+        result.append(f(x))
+    }
+    return result
+}
+
+func genericComputeArray<T, U>(xs: [T], f: T -> U) -> [U] {
+    var result: [U] = []
+    for x in xs {
+        result.append(f(x))
+    }
+    return result
+}
+
+func doubleArray(xs: [Int]) -> [Int] {
+    return map(xs) { x in x * 2 }
+}
+
+func isEvenArray(xs: [Int]) -> [Bool] {
+    return map(xs) { x in x % 2 == 0 }
+}
+
+let values = [1, 2, 3, 4]
+
+doubleArray(values)
+
+isEvenArray(values)
+
+func doubleArrayRedux(xs: [Int]) -> [Int] {
+    return xs.map { x in 2 * x }
+}
+
+doubleArrayRedux(values)
+
+
+// filter
+
+let exampleFiles = ["README.md", "HelloWorld.swift", "HelloSwift.swift", "FlappyBird.swift"]
+
+func getSwiftFiles(files: [String]) -> [String] {
+    var results: [String] = []
+    for f in files {
+        if f.hasSuffix("swift") {
+            results.append(f)
         }
     }
-    return nil
+    return results
 }
 
-let capitals = ["France": "Paris", "Spain": "Madrid", "The Netherlands": "Amsterdam", "Belgium": "Brussels"]
+getSwiftFiles(exampleFiles)
 
-func populationOfCapital(country: String) -> Int? {
-    if let capital = capitals[country] {
-        if let population = cities[capital] {
-            return population * 1000
-        }
+exampleFiles.filter { file in file.hasSuffix("swift") }
+
+// Sum
+
+func sum(xs: [Int]) -> Int {
+    var result: Int = 0
+    for x in xs {
+        result += x
     }
-    return nil
+    return result
 }
 
-populationOfCapital("France")
+let xs = [1, 2, 3, 4]
+sum(xs)
 
-infix operator >>= {}
+// reduce
 
-func >>=<U, T>(optional: T?, f: T -> U?) -> U? {
-    if let x = optional {
-        return f(x)
-    } else {
-        return nil
+func reduce<A, R>(arr: [A], initialValue: R, combine: (R, A) -> R) -> R {
+    var result = initialValue
+    for i in arr {
+        result = combine(result, i)
     }
+    return result
 }
 
-func addOptionals2(optionalX: Int?, optionalY: Int?) -> Int? {
-    return optionalX >>= { x in
-        optionalY >>= { y in
-            x + y
-        }
+func sumUsingReduce(xs: [Int]) -> Int {
+    return reduce(xs, 0) { result, x in result + x }
+}
+
+func productUsingResult(xs: [Int]) -> Int {
+    return reduce(xs, 1, *)
+}
+
+func concatUsingRecude(xs: [String]) -> String {
+    return reduce(xs, "", +)
+}
+
+concatUsingRecude(["This", "is", "silly"])
+
+// Using real reduce
+
+let matrix = [[1, 2, 3, 4], [9, 8, 7, 6], [1, 3, 5, 7, 9]]
+
+func flatten<T>(xss: [[T]]) -> [T] {
+    var result: [T] = []
+    for xs in xss {
+        result += xs
     }
+    return result
 }
 
-func populationOfCapital2(country: String) -> Int? {
-    return capitals[country] >>= { capital in
-        cities[capital] >>= { population in
-            return population * 1000
-        }
-    }
+func flattenUsingReduce<T>(xss: [[T]]) -> [T] {
+    return reduce(xss, []) { result, xs in result + xs }
 }
 
-populationOfCapital2("France")
+flattenUsingReduce(matrix)
+
+
+// Putting it all together
+
+struct City {
+    let name: String
+    let population: Int
+}
+
+let paris = City(name: "Paris", population: 2243)
+let madrid = City(name: "Madrid", population: 3216)
+let amsterdam = City(name: "Amsterdam", population: 811)
+let berlin = City(name: "Berlin", population: 3397)
+
+let cities = [paris, madrid, amsterdam, berlin]
+
+func scale(city: City) -> City {
+    return City(name: city.name, population: city.population * 1000)
+}
+
+let cityText = cities.filter({city in city.population > 1000 })
+      .map(scale)
+      .reduce("City: Population") { result, c in
+        return result + "\n" + "\(c.name): \(c.population)"
+}
+
+println(cityText)
+
 

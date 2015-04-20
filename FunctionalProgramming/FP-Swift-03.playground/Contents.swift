@@ -1,156 +1,89 @@
 // Playground - noun: a place where people can play
 
+import XCPlayground
+import AppKit
 import Foundation
 
-func computeIntArray(xs: [Int], f: Int -> Int) -> [Int] {
-    var result: [Int] = []
-    for x in xs {
-        result.append(f(x))
-    }
-    return result
-}
+XCPSetExecutionShouldContinueIndefinitely()
 
-func doubleIntArray(xs: [Int]) -> [Int] {
-    return computeIntArray(xs) { x in x * 2 }
-}
+typealias Filter = CIImage -> CIImage
 
-// If we were to define map ourselves
+typealias Parameters = Dictionary<String, AnyObject>
 
-func map<T, U>(xs: [T], f: T -> U) -> [U] {
-    var result: [U] = []
-    for x in xs {
-        result.append(f(x))
-    }
-    return result
-}
-
-func genericComputeArray<T, U>(xs: [T], f: T -> U) -> [U] {
-    var result: [U] = []
-    for x in xs {
-        result.append(f(x))
-    }
-    return result
-}
-
-func doubleArray(xs: [Int]) -> [Int] {
-    return map(xs) { x in x * 2 }
-}
-
-func isEvenArray(xs: [Int]) -> [Bool] {
-    return map(xs) { x in x % 2 == 0 }
-}
-
-let values = [1, 2, 3, 4]
-
-doubleArray(values)
-
-isEvenArray(values)
-
-func doubleArrayRedux(xs: [Int]) -> [Int] {
-    return xs.map { x in 2 * x }
-}
-
-doubleArrayRedux(values)
-
-
-// filter
-
-let exampleFiles = ["README.md", "HelloWorld.swift", "HelloSwift.swift", "FlappyBird.swift"]
-
-func getSwiftFiles(files: [String]) -> [String] {
-    var results: [String] = []
-    for f in files {
-        if f.hasSuffix("swift") {
-            results.append(f)
+extension CIFilter {
+    convenience init(name: String, parameters: Parameters) {
+        self.init(name: name)
+        setDefaults()
+        for (key, value: AnyObject) in parameters {
+            setValue(value, forKey: key)
         }
     }
-    return results
-}
 
-getSwiftFiles(exampleFiles)
-
-exampleFiles.filter { file in file.hasSuffix("swift") }
-
-// Sum
-
-func sum(xs: [Int]) -> Int {
-    var result: Int = 0
-    for x in xs {
-        result += x
+    var outputImage: CIImage {
+        return self.valueForKey(kCIOutputImageKey) as CIImage
     }
-    return result
 }
 
-let xs = [1, 2, 3, 4]
-sum(xs)
+func blur(radius: Double) -> Filter {
+    return { image in
+        let parameters: Parameters = [
+            kCIInputRadiusKey: radius,
+            kCIInputImageKey: image
+        ]
+        let filter = CIFilter(name: "CIGaussianBlur",
+            parameters: parameters)
 
-// reduce
-
-func reduce<A, R>(arr: [A], initialValue: R, combine: (R, A) -> R) -> R {
-    var result = initialValue
-    for i in arr {
-        result = combine(result, i)
+        return filter.outputImage
     }
-    return result
 }
 
-func sumUsingReduce(xs: [Int]) -> Int {
-    return reduce(xs, 0) { result, x in result + x }
-}
-
-func productUsingResult(xs: [Int]) -> Int {
-    return reduce(xs, 1, *)
-}
-
-func concatUsingRecude(xs: [String]) -> String {
-    return reduce(xs, "", +)
-}
-
-concatUsingRecude(["This", "is", "silly"])
-
-// Using real reduce
-
-let matrix = [[1, 2, 3, 4], [9, 8, 7, 6], [1, 3, 5, 7, 9]]
-
-func flatten<T>(xss: [[T]]) -> [T] {
-    var result: [T] = []
-    for xs in xss {
-        result += xs
+func colorGenerator(color: NSColor) -> Filter {
+    return { _ in
+        let parameters: Parameters = [kCIInputColorKey: color]
+        let filter = CIFilter(name: "CIConstantColorGenerator", parameters: parameters)
+        return filter.outputImage
     }
-    return result
 }
 
-func flattenUsingReduce<T>(xss: [[T]]) -> [T] {
-    return reduce(xss, []) { result, xs in result + xs }
+func compositeSourceOver(overlay: CIImage) -> Filter {
+    return { image in
+        let parameters: Parameters = [
+            kCIInputBackgroundImageKey: image,
+            kCIInputImageKey: overlay
+        ]
+        let filter = CIFilter(name: "CISourceOverCompositing", parameters: parameters)
+        let cropRect = image.extent()
+
+        return filter.outputImage.imageByCroppingToRect(cropRect)
+    }
 }
 
-flattenUsingReduce(matrix)
-
-
-// Putting it all together
-
-struct City {
-    let name: String
-    let population: Int
+func colorOverlay(color: NSColor) -> Filter {
+    return { image in
+        let overlay = colorGenerator(color)(image)
+        return compositeSourceOver(overlay)(image)
+    }
 }
 
-let paris = City(name: "Paris", population: 2243)
-let madrid = City(name: "Madrid", population: 3216)
-let amsterdam = City(name: "Amsterdam", population: 811)
-let berlin = City(name: "Berlin", population: 3397)
+let bundle = NSBundle.mainBundle()
+let path:String = bundle.resourcePath!
 
-let cities = [paris, madrid, amsterdam, berlin]
+let url = NSURL(string: "http://tinyurl.com/m74sldb")
+let image:CIImage = CIImage(contentsOfURL: url)
 
-func scale(city: City) -> City {
-    return City(name: city.name, population: city.population * 1000)
+
+let blurRadius = 5.0
+let overlayColor = NSColor.redColor().colorWithAlphaComponent(0.2)
+let blurredImage = blur(blurRadius)(image)
+let overlaidmage = colorOverlay(overlayColor)(blurredImage)
+
+
+infix operator >>> { associativity left }
+
+func >>> (filter1: Filter, filter2: Filter) -> Filter {
+    return {img in filter2(filter1(img)) }
 }
 
-let cityText = cities.filter({city in city.population > 1000 })
-      .map(scale)
-      .reduce("City: Population") { result, c in
-        return result + "\n" + "\(c.name): \(c.population)"
-}
-
-println(cityText)
-
+let myFilter2 = blur(blurRadius) >>> colorOverlay(overlayColor)
+let result = myFilter2(image)
 
