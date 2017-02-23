@@ -2,55 +2,15 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:FunctionalSwift.playground">
+   </FileRef>
+   <FileRef
       location = "group:commander.swift">
    </FileRef>
    <FileRef
       location = "group:fetchstates.swift">
    </FileRef>
-   <Group
-      location = "container:"
-      name = "FunctionalProgramming">
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-02.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-03.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-04.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-05.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-06.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-07.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-08.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-09.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-10.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-11.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-12.playground">
-      </FileRef>
-      <FileRef
-         location = "group:FunctionalProgramming/FP-Swift-14.playground">
-      </FileRef>
-   </Group>
    <FileRef
       location = "group:generate_plist.swift">
-   </FileRef>
-   <FileRef
-      location = "group:Recess.playground">
    </FileRef>
 </Workspace>
